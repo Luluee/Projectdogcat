@@ -1,0 +1,88 @@
+name: Build Workflows
+
+on:
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  build-worker:
+    name: Build Worker
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Docker Build
+      uses: dockersamples/.github/.github/workflows/reusable-docker-build.yaml@main
+      with:
+        dockerhub-enable: true
+        ghcr-enable: true
+        image-names: |
+          ghcr.io/dockersamples/example-voting-app-worker
+          dockersamples/examplevotingapp_worker
+        tag-rules: |
+          type=raw,value=latest,enable=${{ endsWith(github.ref, github.event.repository.default_branch) }}
+          type=ref,event=pr
+        context: worker
+        platforms: linux/amd64,linux/arm64,linux/arm/v7
+      env:
+        DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  build-vote:
+    name: Build Vote
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Docker Build
+      uses: dockersamples/.github/.github/workflows/reusable-docker-build.yaml@main
+      with:
+        dockerhub-enable: true
+        ghcr-enable: true
+        image-names: |
+          ghcr.io/dockersamples/example-voting-app-vote
+          dockersamples/examplevotingapp_vote
+        tag-rules: |
+          type=raw,value=latest,enable=${{ endsWith(github.ref, github.event.repository.default_branch) }}
+          type=raw,value=before,enable=${{ endsWith(github.ref, github.event.repository.default_branch) }}
+          type=raw,value=after,enable=${{ endsWith(github.ref, github.event.repository.default_branch) }}
+          type=ref,event=pr
+        context: vote
+        platforms: linux/amd64,linux/arm64,linux/arm/v7
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      env:
+        DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  build-result:
+    name: Build Result
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Docker Build
+      uses: dockersamples/.github/.github/workflows/reusable-docker-build.yaml@main
+      with:
+        dockerhub-enable: true
+        ghcr-enable: true
+        image-names: |
+          ghcr.io/dockersamples/example-voting-app-result
+          dockersamples/examplevotingapp_result
+        tag-rules: |
+          type=raw,value=latest,enable=${{ endsWith(github.ref, github.event.repository.default_branch) }}
+          type=raw,value=before,enable=${{ endsWith(github.ref, github.event.repository.default_branch) }}
+          type=raw,value=after,enable=${{ endsWith(github.ref, github.event.repository.default_branch) }}
+          type=ref,event=pr
+        context: result
+        platforms: linux/amd64,linux/arm64,linux/arm/v7
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      env:
+        DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
